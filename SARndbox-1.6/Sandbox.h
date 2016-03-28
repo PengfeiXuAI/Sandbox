@@ -196,6 +196,8 @@ class Sandbox:public Vrui::Application,public GLObject
 	GLMotif::PopupMenu* createMainMenu(void);
 	GLMotif::PopupWindow* createWaterControlDialog(void);
 	bool loadHeightColorMap(const char* heightColorMapFileName); // Loads a new height color map from a file of the given name
+	Kinect::FrameSource::IntrinsicParameters getIntrinsicParameters(void);
+	Kinect::FrameSource::DepthCorrection* getDepthCorrectionParameters(void);
 	
 	/* Constructors and destructors: */
 	public:

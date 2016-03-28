@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include "DataOperator.h"
-
+#include <vector>
 
 //#include <unistd.h>
 
@@ -19,8 +19,22 @@ void SetBuff(char * buff, Kinect::FrameBuffer frame)
 	}
 }
 
+bool IsFist(int map[10][10])
+{
+	int wid = 10;
+	int hei = 10;
+
+	/* 1 means valid region */
+
+	std::vector<int> regionWidths;
+	std::vector<int> regionHeights;
+
+	return false;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	cout << "unsigned short" << sizeof(unsigned short) << endl;
 	// Basic data save finish.
 
 	// TODO: write a callback strategy to process data
@@ -32,7 +46,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	cout << "End sleep..." << endl;
 
-	Kinect::FrameBuffer test(10, 10, 1);
+	Kinect::FrameBuffer Frame(2, 5, 10);
 	for (int i = 0; i < 1; i++)
 	{	
 		char * buff = new char[10];
@@ -42,7 +56,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		buff[3] = '3';
 		buff[4] = '3';
 
-		SetBuff(op.Get(), test);
+		//SetBuff(op.ReadBuff(), test);
+
+		if (op.ReadFrame(Frame))
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				cout << (int)((char *)Frame.getBuffer())[i] << endl;
+			}
+		}
 
 
 		//op.SetFromFrame(test);
@@ -54,16 +76,16 @@ int _tmain(int argc, _TCHAR* argv[])
 		//pBuff[2] = '2';
 		//pBuff[3] = '3';
 
-		void * pBuff2 = test.getBuffer();
+		//void * pBuff2 = test.getBuffer();
 
 		//test.PrintBuff();
 
 		//if (test.buff)
 		//{
-			for (int i = 0; i < 10; i++)
-			{
-				cout << (int)((char *)pBuff2)[i] << endl;
-			}
+			//for (int i = 0; i < 10; i++)
+			//{
+			//	cout << (int)((char *)pBuff2)[i] << endl;
+			//}
 		//}
 	}
 

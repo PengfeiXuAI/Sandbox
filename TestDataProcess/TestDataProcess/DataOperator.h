@@ -27,7 +27,7 @@ namespace Utility {
 			dataFilePath = filePath;
 			unitDataLengthInByte = unitLength;
 			isRead = read;
-			currentIndex = 0;
+			currentIndex = 0; 
 			if (isRead)
 			{
 				buffer = new char[unitDataLengthInByte];
@@ -57,7 +57,7 @@ namespace Utility {
 			}
 		}
 
-		char* Get()
+		char* ReadBuff()
 		{
 			if (file.read(buffer, unitDataLengthInByte))
 			{
@@ -72,7 +72,7 @@ namespace Utility {
 			return NULL;
 		}
 
-		bool Set(char * buffer)
+		bool SaveBuff(char * buffer)
 		{
 			if(file.write(buffer, unitDataLengthInByte))
 			{				
@@ -87,19 +87,28 @@ namespace Utility {
 			return false;
 		}
 
-		bool SetFromFrame(Kinect::FrameBuffer frame)
+		bool ReadFrame(Kinect::FrameBuffer& frame)
 		{
-			if (file.write((char *)frame.getBuffer(), unitDataLengthInByte))
+			char * buff = ReadBuff();
+
+			if (buff == NULL)
 			{
-				cout << "Set data, index: " << currentIndex << endl;
-
-				currentIndex++;
-				return true;
+				return false;
 			}
+			else
+			{
+				char * pBuff = static_cast<char *>(frame.getBuffer());
 
-			cout << "Set data failed." << endl;
+				for (int i = 0; i < 10; i++)
+				{
+					pBuff[i] = buff[i];
+				}
+			}
+		}
 
-			return false;
+		bool SaveFrame(Kinect::FrameBuffer frame)
+		{
+			return SaveBuff((char*)frame.getBuffer());
 		}
 	};
 }

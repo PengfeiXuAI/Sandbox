@@ -1,4 +1,4 @@
-/***********************************************************************
+﻿/***********************************************************************
 Sandbox - Vrui application to drive an augmented reality sandbox.
 Copyright (c) 2012-2015 Oliver Kreylos
 
@@ -78,6 +78,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <Vrui/DisplayState.h>
 #include <Vrui/OpenFile.h>
 #include <Kinect/Camera.h>
+
+#define OUTPUT_DEBUG_INFO 1
+
 
 #define SAVEDEPTH 0
 
@@ -344,6 +347,72 @@ Sandbox::DataItem::~DataItem(void)
 Methods of class Sandbox:
 ************************/
 
+Kinect::FrameSource::DepthCorrection* Sandbox::getDepthCorrectionParameters(void)
+{
+	/* Assemble the name of the depth correction parameters file: */
+	std::string depthCorrectionFileName = KINECT_CONFIG_DIR;
+	depthCorrectionFileName.push_back('/');
+	depthCorrectionFileName.append(KINECT_CAMERA_DEPTHCORRECTIONFILENAMEPREFIX);
+	depthCorrectionFileName.push_back('-');
+	depthCorrectionFileName.append(serialNumber);
+	depthCorrectionFileName.append(".dat");
+
+	/* Check if a file of the given name exists and is readable: */
+	if (Misc::getPathType(depthCorrectionFileName.c_str()) == Misc::PATHTYPE_FILE)
+	{
+		/* Open the depth correction file: */
+		IO::FilePtr depthCorrectionFile(IO::openFile(depthCorrectionFileName.c_str()));
+		depthCorrectionFile->setEndianness(Misc::LittleEndian);
+
+		/* Read and return a depth correction object: */
+		return new DepthCorrection(*depthCorrectionFile);
+	}
+	else
+	{
+		/* Return a default depth correction object: */
+		return Kinect::FrameSource::getDepthCorrectionParameters();
+	}
+}
+
+Kinect::FrameSource::IntrinsicParameters Sandbox::getIntrinsicParameters(void)
+{
+	/* Assemble the name of the intrinsic parameter file: */
+	std::string intrinsicParameterFileName = KINECT_CONFIG_DIR;
+	intrinsicParameterFileName.push_back('/');
+	intrinsicParameterFileName.append(KINECT_CAMERA_INTRINSICPARAMETERSFILENAMEPREFIX);
+	intrinsicParameterFileName.push_back('-');
+	intrinsicParameterFileName.append(serialNumber);
+	if (frameSizes[COLOR] == FS_1280_1024)
+		intrinsicParameterFileName.append("-high");
+	intrinsicParameterFileName.append(".dat");
+
+	IntrinsicParameters result;
+	try
+	{
+		/* Open the parameter file: */
+		IO::FilePtr parameterFile(IO::openFile(intrinsicParameterFileName.c_str()));
+		parameterFile->setEndianness(Misc::LittleEndian);
+
+		/* Read the parameter file: */
+		Misc::Float64 depthMatrix[16];
+		parameterFile->read(depthMatrix, 4 * 4);
+		result.depthProjection = IntrinsicParameters::PTransform::fromRowMajor(depthMatrix);
+		Misc::Float64 colorMatrix[16];
+		parameterFile->read(colorMatrix, 4 * 4);
+		result.colorProjection = IntrinsicParameters::PTransform::fromRowMajor(colorMatrix);
+	}
+	catch (std::runtime_error)
+	{
+#if OUTPUT_DEBUG_INFO
+		cout << "runtime_error in IntrinsicParameters" << endl;
+#endif
+		/* Construct the color projection matrix from the depth pixel transformation polynomial: */
+		result.colorProjection = IntrinsicParameters::PTransform::identity;
+	}
+
+	return result;
+}
+
 void Sandbox::rawDepthFrameDispatcher(const Kinect::FrameBuffer& frameBuffer)
 	{
 	/* Pass the received frame to the frame filter and the rain maker's frame filter: */
@@ -600,6 +669,11 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	addEventTool("Pause Topography",0,0);
 	
 	/* Process command line parameters: */
+	
+	bool saveData=false;
+	bool readData=false;
+	
+	
 	bool printHelp=false;
 	int cameraIndex=0;
 	std::string sandboxLayoutFileName=CONFIGDIR;
@@ -634,6 +708,10 @@ Sandbox::Sandbox(int& argc,char**& argv)
 			{
 			if(strcasecmp(argv[i]+1,"h")==0)
 				printHelp=true;
+			else if(strcasecmp(argv[i]+1,"sd")==0)
+				saveData=true;
+			else if(strcasecmp(argv[i]+1,"rd")==0)
+				readData=true;
 			else if(strcasecmp(argv[i]+1,"c")==0)
 				{
 				++i;
@@ -818,18 +896,49 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	/* Enable background USB event handling: */
 	usbContext.startEventHandling();
 	
-	/* Open the Kinect camera device: */
-	camera=new Kinect::Camera(usbContext,cameraIndex);
-	camera->setCompressDepthFrames(true);
-	camera->setSmoothDepthFrames(false);
-	for(int i=0;i<2;++i)
-		frameSize[i]=camera->getActualFrameSize(Kinect::FrameSource::DEPTH)[i];
-	
-	/* Get the camera's per-pixel depth correction parameters: */
-	Misc::SelfDestructPointer<Kinect::FrameSource::DepthCorrection> depthCorrection(camera->getDepthCorrectionParameters());
-	
-	/* Get the camera's intrinsic parameters: */
-	cameraIps=camera->getIntrinsicParameters();
+	/* Fill the frame size */
+	frameSize[0] = 100;
+	frameSize[1] = 100;
+
+	unsigned int colorFrameSize[2];
+	colorFrameSize[0] = 100;
+	colorFrameSize[1] = 100;
+
+	if(!readData)
+	{
+		/* Open the Kinect camera device: */
+		camera=new Kinect::Camera(usbContext,cameraIndex);
+		camera->setCompressDepthFrames(true);
+		camera->setSmoothDepthFrames(false);
+
+		for(int i=0;i<2;++i)
+			frameSize[i]=camera->getActualFrameSize(Kinect::FrameSource::DEPTH)[i];
+		
+#if OUTPUT_DEBUG_INFO
+		std::cout << "Depth frameSize: " << frameSize[0] << " " << frameSize[1] << endl;
+#endif
+		
+		for (int i = 0; i<2; ++i)
+			colorFrameSize[i] = camera->getActualFrameSize(Kinect::FrameSource::COLOR)[i];
+
+#if OUTPUT_DEBUG_INFO
+		std::cout << "Color frameSize: " << colorFrameSize[0] << " " << colorFrameSize[1] << endl;
+#endif
+
+		/* Get the camera's per-pixel depth correction parameters: */
+		Misc::SelfDestructPointer<Kinect::FrameSource::DepthCorrection> depthCorrection(camera->getDepthCorrectionParameters());
+		
+		/* Get the camera's intrinsic parameters: */
+		cameraIps = camera->getIntrinsicParameters();
+	}
+	else
+	{
+		/* Get the camera's per-pixel depth correction parameters: */
+		Misc::SelfDestructPointer<Kinect::FrameSource::DepthCorrection> depthCorrection(getDepthCorrectionParameters());
+
+		/* Get the camera's intrinsic parameters: */
+		cameraIps = getIntrinsicParameters();
+	}
 	
 	/* Read the sandbox layout file: */
 	Geometry::Plane<double,3> basePlane;
@@ -874,7 +983,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		rainElevationMax=rainElevationMin;
 	
 	/* Create the rain maker object: */
-	rainMaker=new RainMaker(frameSize,camera->getActualFrameSize(Kinect::FrameSource::COLOR),cameraIps.depthProjection,cameraIps.colorProjection,basePlane,rainElevationMin,rainElevationMax,20);
+	rainMaker = new RainMaker(frameSize, colorFrameSize, cameraIps.depthProjection, cameraIps.colorProjection, basePlane, rainElevationMin, rainElevationMax, 20);
 	rainMaker->setDepthIsFloat(true);
 	rainMaker->setOutputBlobsFunction(Misc::createFunctionCall(this,&Sandbox::receiveRainObjects));
 	
@@ -888,8 +997,65 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	rmFrameFilter->setSpatialFilter(false);
 	rmFrameFilter->setOutputFrameFunction(Misc::createFunctionCall(rainMaker,&RainMaker::receiveRawDepthFrame));
 	
-	/* Start streaming depth frames: */
-	camera->startStreaming(Misc::createFunctionCall(rainMaker,&RainMaker::receiveRawColorFrame),Misc::createFunctionCall(this,&Sandbox::rawDepthFrameDispatcher));
+	if(!saveData && !readData)
+	{
+		/* Start streaming depth frames: */
+		camera->startStreaming(Misc::createFunctionCall(rainMaker,&RainMaker::receiveRawColorFrame),Misc::createFunctionCall(this,&Sandbox::rawDepthFrameDispatcher));
+	}
+	else
+	{	
+		int colorFrameLength = 10; // unsigned short
+		int depthFrameLength = 10;
+		std::string colorDataSaveFilePath="";
+		std::string depthDataSaveFilePath="";
+		colorDataSaveFilePath.append("_color.dat");
+		depthDataSaveFilePath.append("_depth.dat");		
+
+		if(saveData)
+		{			
+			DataOperator colorDataOperator(colorDataSaveFilePath, colorFrameLength, false);
+			DataOperator depthDataOperator(depthDataSaveFilePath, depthFrameLength, false);
+			
+			camera->startStreaming(Misc::createFunctionCall(colorDataOperator,&DataOperator::Set),Misc::createFunctionCall(depthDataOperator,&DataOperator::Set));
+		}
+		else if(readData)
+		{	
+
+			/*
+			frameSize[0] = 100;
+			frameSize[1] = 100;
+
+			unsigned int colorFrameSize[2];
+			colorFrameSize[0] = 100;
+			colorFrameSize[1] = 100;
+			*/
+			colorFrameLength = colorFrameSize[0] * colorFrameSize[1] * sizeof(unsigned short);
+			depthFrameLength = frameSize[0] * frameSize[1] * sizeof(unsigned short);
+
+			Kinect::FrameBuffer colorFrame(colorFrameSize[0], colorFrameSize[1], colorFrameLength);
+			Kinect::FrameBuffer depthFrame(frameSize[0], frameSize[1], depthFrameLength);
+
+			DataOperator colorDataOperator(colorDataSaveFilePath, colorFrameLength, true);
+			DataOperator depthDataOperator(depthDataSaveFilePath, depthFrameLength, true);
+		
+			while (true)
+			{
+				if (colorDataOperator.ReadFrame(colorFrame) && depthDataOperator.ReadFrame(depthFrame))
+				{
+					rainMaker.receiveRawColorFrame(colorFrame);
+					rawDepthFrameDispatcher(depthFrame);
+				}
+				else
+				{
+					break;
+				}
+
+				/*头文件: #include <unistd.h>
+				功  能: usleep功能把进程挂起一段时间， 单位是微秒（百万分之一秒）；
+				语  法: void usleep(int micro_seconds);*/
+			}
+		}
+	}
 	
 	/* Load the projector transformation: */
 	if(fixProjectorView)
@@ -1006,7 +1172,9 @@ Sandbox::Sandbox(int& argc,char**& argv)
 Sandbox::~Sandbox(void)
 	{
 	/* Stop streaming depth frames: */
-	camera->stopStreaming();
+	if (!readData)
+		camera->stopStreaming();
+
 	delete camera;
 	delete frameFilter;
 	
