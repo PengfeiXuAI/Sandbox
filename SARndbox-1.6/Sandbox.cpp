@@ -97,6 +97,28 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 Static elements of class Sandbox::WaterTool:
 *******************************************/
 
+Kinect::FrameSource::DepthCorrection* Sandbox::getDepthCorrectionParameters(void)
+{
+	/* Assemble the name of the depth correction parameters file: */
+	std::string depthCorrectionFileName = "/home/oppentech/Vrui-3.1/etc/Kinect-2.8/DepthCorrection-A00365910791102A.dat";
+
+	/* Check if a file of the given name exists and is readable: */
+	//if (Misc::getPathType(depthCorrectionFileName.c_str()) == Misc::PATHTYPE_FILE)
+	//{
+		/* Open the depth correction file: */
+		IO::FilePtr depthCorrectionFile(IO::openFile(depthCorrectionFileName.c_str()));
+		depthCorrectionFile->setEndianness(Misc::LittleEndian);
+
+		/* Read and return a depth correction object: */
+		return new Kinect::FrameSource::DepthCorrection(*depthCorrectionFile);
+	//}
+	//else
+	//{
+		/* Return a default depth correction object: */
+	//	return Kinect::FrameSource::getDepthCorrectionParameters();
+	//}
+}
+
 Sandbox::WaterToolFactory* Sandbox::WaterTool::factory=0;
 
 /***********************************
