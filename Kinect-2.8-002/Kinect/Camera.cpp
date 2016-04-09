@@ -154,6 +154,186 @@ void Camera::CalibrationParameters::write(IO::File& file) const
 	file.write<Misc::Float32>(referenceDistance);
 	file.write<Misc::Float32>(referencePixelSize);
 	}
+	
+	void Camera::CalibrationParameters::read(std::string filePath)
+	{
+	std::fstream file;
+	file.open(filePath.c_str(), std::fstream::in | std::fstream::binary);
+
+	file.read((char *) &dxCenter, sizeof(Misc::SInt32));
+    file.read((char *) &ax, sizeof(Misc::SInt32));
+    file.read((char *) &bx, sizeof(Misc::SInt32));
+    file.read((char *) &cx, sizeof(Misc::SInt32));
+    file.read((char *) &dx, sizeof(Misc::SInt32));
+
+    file.read((char *) &dxStart, sizeof(Misc::SInt32));
+    file.read((char *) &ay, sizeof(Misc::SInt32));
+    file.read((char *) &by, sizeof(Misc::SInt32));
+    file.read((char *) &cy, sizeof(Misc::SInt32));
+    file.read((char *) &dy, sizeof(Misc::SInt32));
+
+    file.read((char *) &dyStart, sizeof(Misc::SInt32));
+    file.read((char *) &dxBetaStart, sizeof(Misc::SInt32));
+    file.read((char *) &dyBetaStart, sizeof(Misc::SInt32));
+
+    file.read((char *) &rolloutBlank, sizeof(Misc::SInt32));
+    file.read((char *) &rolloutSize, sizeof(Misc::SInt32));
+    file.read((char *) &dxBetaInc, sizeof(Misc::SInt32));
+    file.read((char *) &dyBetaInc, sizeof(Misc::SInt32));
+
+    file.read((char *) &dxdxStart, sizeof(Misc::SInt32));
+    file.read((char *) &dxdyStart, sizeof(Misc::SInt32));
+    file.read((char *) &dydxStart, sizeof(Misc::SInt32));
+    file.read((char *) &dydyStart, sizeof(Misc::SInt32));
+
+    file.read((char *) &dxdxdxStart, sizeof(Misc::SInt32));
+    file.read((char *) &dydxdxStart, sizeof(Misc::SInt32));
+    file.read((char *) &dxdxdyStart, sizeof(Misc::SInt32));
+    file.read((char *) &dydxdyStart, sizeof(Misc::SInt32));
+
+    file.read((char *) &backComp1, sizeof(Misc::SInt32));
+    file.read((char *) &dydydxStart, sizeof(Misc::SInt32));
+    file.read((char *) &backComp2, sizeof(Misc::SInt32));
+    file.read((char *) &dydydyStart, sizeof(Misc::SInt32));
+//	break;
+
+//case 1:
+    file.read((char *) &startLines, sizeof(Misc::UInt16));
+    file.read((char *) &endLines, sizeof(Misc::UInt16));
+    file.read((char *) &croppingLines, sizeof(Misc::UInt16));
+//	break;
+
+//case 2:
+    file.read((char *) &constantShift, sizeof(Misc::UInt16));
+//	break;
+
+//case 3:
+    file.read((char *) &dcmosEmitterDist, sizeof(Misc::Float32));
+    file.read((char *) &dcmosRcmosDist, sizeof(Misc::Float32));
+    file.read((char *) &referenceDistance, sizeof(Misc::Float32));
+    file.read((char *) &referencePixelSize, sizeof(Misc::Float32));
+
+    file.close();
+	}
+
+void Camera::CalibrationParameters::read(int subsection, std::fstream file)
+	{
+	switch(subsection)
+		{
+		case 0:
+			file.read((char *) &dxCenter, sizeof(Misc::SInt32));
+            file.read((char *) &ax, sizeof(Misc::SInt32));
+            file.read((char *) &bx, sizeof(Misc::SInt32));
+            file.read((char *) &cx, sizeof(Misc::SInt32));
+            file.read((char *) &dx, sizeof(Misc::SInt32));
+
+            file.read((char *) &dxStart, sizeof(Misc::SInt32));
+            file.read((char *) &ay, sizeof(Misc::SInt32));
+            file.read((char *) &by, sizeof(Misc::SInt32));
+            file.read((char *) &cy, sizeof(Misc::SInt32));
+            file.read((char *) &dy, sizeof(Misc::SInt32));
+
+            file.read((char *) &dyStart, sizeof(Misc::SInt32));
+            file.read((char *) &dxBetaStart, sizeof(Misc::SInt32));
+            file.read((char *) &dyBetaStart, sizeof(Misc::SInt32));
+
+            file.read((char *) &rolloutBlank, sizeof(Misc::SInt32));
+            file.read((char *) &rolloutSize, sizeof(Misc::SInt32));
+            file.read((char *) &dxBetaInc, sizeof(Misc::SInt32));
+            file.read((char *) &dyBetaInc, sizeof(Misc::SInt32));
+
+            file.read((char *) &dxdxStart, sizeof(Misc::SInt32));
+            file.read((char *) &dxdyStart, sizeof(Misc::SInt32));
+            file.read((char *) &dydxStart, sizeof(Misc::SInt32));
+            file.read((char *) &dydyStart, sizeof(Misc::SInt32));
+
+            file.read((char *) &dxdxdxStart, sizeof(Misc::SInt32));
+            file.read((char *) &dydxdxStart, sizeof(Misc::SInt32));
+            file.read((char *) &dxdxdyStart, sizeof(Misc::SInt32));
+            file.read((char *) &dydxdyStart, sizeof(Misc::SInt32));
+
+            file.read((char *) &backComp1, sizeof(Misc::SInt32));
+            file.read((char *) &dydydxStart, sizeof(Misc::SInt32));
+            file.read((char *) &backComp2, sizeof(Misc::SInt32));
+            file.read((char *) &dydydyStart, sizeof(Misc::SInt32));
+			break;
+
+		case 1:
+            file.read((char *) &startLines, sizeof(Misc::UInt16));
+            file.read((char *) &endLines, sizeof(Misc::UInt16));
+            file.read((char *) &croppingLines, sizeof(Misc::UInt16));
+			break;
+
+		case 2:
+			file.read((char *) &constantShift, sizeof(Misc::UInt16));
+			break;
+
+		case 3:
+            file.read((char *) &dcmosEmitterDist, sizeof(Misc::Float32));
+            file.read((char *) &dcmosRcmosDist, sizeof(Misc::Float32));
+            file.read((char *) &referenceDistance, sizeof(Misc::Float32));
+            file.read((char *) &referencePixelSize, sizeof(Misc::Float32));
+			break;
+		}
+	}
+
+void Camera::CalibrationParameters::write(std::string filePath) const
+	{
+	std::fstream file;
+	file.open(filePath.c_str(), std::fstream::out | std::fstream::binary);
+
+    std::cout << "sizeof(Misc::SInt32): " << sizeof(Misc::SInt32) << std::endl;
+    std::cout << "sizeof(Misc::UInt16): " << sizeof(Misc::UInt16) << std::endl;
+
+	file.write((char *) &dxCenter, sizeof(Misc::SInt32));
+	file.write((char *) &ax, sizeof(Misc::SInt32));
+	file.write((char *) &bx, sizeof(Misc::SInt32));
+	file.write((char *) &cx, sizeof(Misc::SInt32));
+	file.write((char *) &dx, sizeof(Misc::SInt32));
+
+	file.write((char *) &dxStart, sizeof(Misc::SInt32));
+	file.write((char *) &ay, sizeof(Misc::SInt32));
+	file.write((char *) &by, sizeof(Misc::SInt32));
+	file.write((char *) &cy, sizeof(Misc::SInt32));
+	file.write((char *) &dy, sizeof(Misc::SInt32));
+
+	file.write((char *) &dyStart, sizeof(Misc::SInt32));
+	file.write((char *) &dxBetaStart, sizeof(Misc::SInt32));
+	file.write((char *) &dyBetaStart, sizeof(Misc::SInt32));
+
+	file.write((char *) &rolloutBlank, sizeof(Misc::SInt32));
+	file.write((char *) &rolloutSize, sizeof(Misc::SInt32));
+	file.write((char *) &dxBetaInc, sizeof(Misc::SInt32));
+	file.write((char *) &dyBetaInc, sizeof(Misc::SInt32));
+
+	file.write((char *) &dxdxStart, sizeof(Misc::SInt32));
+	file.write((char *) &dxdyStart, sizeof(Misc::SInt32));
+	file.write((char *) &dydxStart, sizeof(Misc::SInt32));
+	file.write((char *) &dydyStart, sizeof(Misc::SInt32));
+
+	file.write((char *) &dxdxdxStart, sizeof(Misc::SInt32));
+	file.write((char *) &dydxdxStart, sizeof(Misc::SInt32));
+	file.write((char *) &dxdxdyStart, sizeof(Misc::SInt32));
+	file.write((char *) &dydxdyStart, sizeof(Misc::SInt32));
+
+    file.write((char *) &backComp1, sizeof(Misc::SInt32));
+	file.write((char *) &dydydxStart, sizeof(Misc::SInt32));
+	file.write((char *) &backComp2, sizeof(Misc::SInt32));
+	file.write((char *) &dydydyStart, sizeof(Misc::SInt32));
+
+    file.write((char *) &startLines, sizeof(Misc::UInt16));
+	file.write((char *) &endLines, sizeof(Misc::UInt16));
+	file.write((char *) &croppingLines, sizeof(Misc::UInt16));
+	file.write((char *) &constantShift, sizeof(Misc::UInt16));
+
+
+    file.write((char *) &dcmosEmitterDist, sizeof(Misc::Float32));
+	file.write((char *) &dcmosRcmosDist, sizeof(Misc::Float32));
+	file.write((char *) &referenceDistance, sizeof(Misc::Float32));
+	file.write((char *) &referencePixelSize, sizeof(Misc::Float32));
+
+    file.close();
+}
 
 /***************************************
 Methods of class Camera::StreamingState:
